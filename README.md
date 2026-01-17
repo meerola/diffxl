@@ -4,33 +4,49 @@
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![Code Style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-This is a CLI tool for comparing two excel tables based on a unique identifier column. The differences between the old and new file are output into a report in xlsx and html format.
+# diffxl
 
-A typical use case could be comparing two revisions of the same document to answer the question: "What has been added/removed/changed in the table, and how have the cell values changes?". 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![Code Style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-For example, in plant engineering projects, diffxl can show exactly what has changed between two revisions of a valve list, giving a portable report in xlsx/html format that show exactly what details have changed since the list was last submitted.
+**diffxl** is a robust CLI tool designed to compare two Excel tables based on a Unique Identifier (UID). It identifies exactly what has been added, removed, or changed, and generates portable reports in both XLSX and HTML formats.
 
-diffxl is meant to be able to quickly do a comparison, and will try to do the comparison even if no sheet name or UID column name is specified. If no sheet name is specified, diffxl will use the active sheet, find the table and use the left-most column as the UID. 
+### The Use Case
+A typical use case involves comparing two revisions of the same document to answer: *"What has been added, removed, or changed in the table, and how have the cell values shifted?"*
+
+> **Example:** In plant engineering projects, diffxl can compare two revisions of a valve list. It produces a clear audit trail showing exactly which technical details (pressure ratings, materials, tag numbers) have changed since the last submission.
+
+### Quick Start Logic
+**diffxl** is built for quickly getting a comparison done. It attempts to perform a comparison even with minimal configuration:
+* **No Key Column?** It defaults to the active sheet, and automatically detects the table header and uses the left-most column as the UID.
+* **No Sheet Name?** It scans through the file to find which sheet contains the table with the UID column.
+
+---
 
 ## Features
 
-* **Detailed Comparison on cell and column level:**
-  * Identifies **Added** rows and columns.
-  * Identifies **Removed** rows and columns.
-  * Identifies **Changed** cell values.
-* **Smart Table Detection:** Looks through the sheets for the UID column. Automatically finds the table header and ignores data above/below the table.
-* **Web-based Diff Report:** Generates an interactive HTML diff report with filtering, highlighting and inline comparison.
-* **Excel Diff Report:** Same principle as for HTML report, but in excel format. Additions, removals and changes are shown in separate sheets.
-* **Failure Analysis:** If diffxl fails (e.g., missing key), the tool analyzes the files and can suggest candidate columns. Using the --diagnostic flag will generate a HTML diagnostic report. 
-* **NaN-value normalization**: by default (e.g., treating `NaN` as equal to `None` or `""`). Using the --raw flag will disable this behavior.
-* **Diff with duplicate UIDs**: The --dedup flag allows diffxl to proceed by ignoring duplicate UID rows. The ignored rows will be shown in the diff report so the user knows what was removed.
-* **Format Support:** Supports `.xlsx`, `.xlsm`, `.xls`, and `.csv`.é
+### Deep Comparison
+* **Row-Level Diff:** Identifies **Added** and **Removed** rows based on the UID.
+* **Cell-Level Diff:** Highlights exactly which cell values have **Changed** between revisions.
+* **Format Support:** Compatible with `.xlsx`, `.xlsm`, `.xls`, and `.csv`.
+
+### Reporting
+* **Interactive Web Report:** Generates an HTML report with filtering, highlighting, and inline value comparisons (great for non-Excel users).
+* **Excel Diff Report:** Generates a multi-sheet Excel workbook separating Additions, Removals, and Changes for easy filtering.
+
+### Smart Processing
+* **Auto-Detection:** Automatically locates the table header, ignoring metadata or titles above/below the actual data.
+* **NaN Normalization:** By default, treats `NaN`, `None`, and `""` as equal to reduce noise. (Disable with `--raw`).
+* **Failure Analysis:** If a comparison fails (e.g., a missing key), `diffxl` analyzes the files and suggests the most likely UID columns.
+* **Duplicate Handling:** The `--dedup` flag allows processing of files with duplicate UIDs by keeping the first occurrence and logging the ignored rows.
+
+---
 
 ## Installation
 
 ```bash
 pip install diffxl
-```
 
 ## Usage
 
@@ -38,8 +54,8 @@ pip install diffxl
 # Simple usage (uses leftmost column as key, generates Excel + HTML)
 diffxl <old_file> <new_file>
 
-# Specify a key column
-diffxl <old_file> <new_file> --key "Tag"
+# Specify a key column and prefix
+diffxl <old_file> <new_file> --key "Tag" --prefix "ProjectA_"
 ```
 
 ### Arguments
@@ -48,7 +64,7 @@ diffxl <old_file> <new_file> --key "Tag"
 * `new_file`: Path to the new file.
 * `--key`, `-k`: The column name to use as the unique identifier (default: **column** **furthest to the left in the identified table**).
 * `--sheet`, `-s`: (Optional) Specific sheet name to compare.
-* `--output`, `-o`: Output filename (default: `diff_report.xlsx`).
+* `--output`, `-o`: Output filename or path for the xlsx report(default: `diff_report.xlsx`). html report will be saved in the same directory with the same name.
 * `--prefix`, `-p`: Add a prefix to output filenames (e.g., `ABC_diff_report.xlsx`) to keep track of multiple runs.
 * `--raw`: Perform exact string comparison (disable smart normalization like treating `NaN` as equal to `None`).
 * `--no-web`: Disable HTML report generation.
