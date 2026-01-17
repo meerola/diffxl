@@ -21,6 +21,7 @@ A typical use case involves comparing two revisions of the same document to answ
 **diffxl** is built for quickly getting a comparison done. It attempts to perform a comparison even with minimal configuration:
 * **No Key Column?** It defaults to the active sheet, and automatically detects the table header and uses the left-most column as the UID.
 * **No Sheet Name?** It scans through the file to find which sheet contains the table with the UID column.
+* The html report is opened automatically after a successful diff.
 
 ---
 
@@ -32,8 +33,8 @@ A typical use case involves comparing two revisions of the same document to answ
 * **Format Support:** Compatible with `.xlsx`, `.xlsm`, `.xls`, and `.csv`.
 
 ### Reporting
-* **Interactive Web Report:** Generates an HTML report with filtering, highlighting, and inline value comparisons (great for non-Excel users).
-* **Excel Diff Report:** Generates a multi-sheet Excel workbook separating Additions, Removals, and Changes for easy filtering.
+* **Interactive Web Report:** Generates an HTML report with filtering, highlighting, and inline value comparisons.
+* **Excel Diff Report:** Generates a multi-sheet Excel workbook separating Additions, Removals, and Changes per column for easy filtering. Also includes a color-coded complete table similar to the html report.
 
 ### Smart Processing
 * **Auto-Detection:** Automatically locates the table header, ignoring metadata or titles above/below the actual data.
@@ -54,8 +55,8 @@ pip install diffxl
 # Simple usage (uses leftmost column as key, generates Excel + HTML)
 diffxl <old_file> <new_file>
 
-# Specify a key column and prefix
-diffxl <old_file> <new_file> --key "Tag" --prefix "ProjectA_"
+# Specify a key column
+diffxl <old_file> <new_file> --key "Tag"
 ```
 
 ### Arguments
@@ -74,7 +75,7 @@ diffxl <old_file> <new_file> --key "Tag" --prefix "ProjectA_"
 ### Example
 
 ```bash
-diffxl samples/valvelist_v1.xlsx samples/valvelist_v2.xlsx
+diffxl samples/valvelist_v1.xlsx samples/valvelist_v2.xlsx --prefix "valves_v1_v2_"
 ```
 
 ## Output
