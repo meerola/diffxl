@@ -53,6 +53,11 @@ diffxl <old_file> <new_file>
 diffxl <old_file> <new_file> --key "Tag"
 ```
 
+Running with uvx without installation:
+```bash
+uvx diffxl <old_file> <new_file>
+```
+
 ### Arguments
 
 * `old_file`: Path to the original file.
