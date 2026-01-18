@@ -42,6 +42,7 @@ A typical use case involves comparing two revisions of the same document to answ
 
 ```bash
 pip install diffxl
+```
 
 ## Usage
 
@@ -53,7 +54,7 @@ diffxl <old_file> <new_file>
 diffxl <old_file> <new_file> --key "Tag"
 ```
 
-Running with uvx without installation:
+Alternatively, run directly with uvx:
 ```bash
 uvx diffxl <old_file> <new_file>
 ```
