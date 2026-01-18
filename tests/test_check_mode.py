@@ -45,7 +45,7 @@ def ambiguous_excel(tmp_path):
 
 def test_smart_sheet_detection(multi_sheet_excel):
     # Should automatically find "ID" in "DataSheet"
-    df = read_data_table(multi_sheet_excel, "ID")
+    df, _ = read_data_table(multi_sheet_excel, "ID")
     assert "ID" in df.columns
     assert len(df) == 3
     assert df.iloc[0]["ID"] == 1
@@ -59,7 +59,7 @@ def test_smart_sheet_detection_ambiguous(ambiguous_excel):
 
 def test_smart_sheet_explicit(multi_sheet_excel):
     # Should work if we explicitly say DataSheet
-    df = read_data_table(multi_sheet_excel, "ID", sheet_name="DataSheet")
+    df, _ = read_data_table(multi_sheet_excel, "ID", sheet_name="DataSheet")
     assert "ID" in df.columns
     
     # Should fail if we say Cover
