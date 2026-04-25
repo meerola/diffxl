@@ -320,7 +320,13 @@ def diff_command(
             output_renderables.append(Text("Reports Generated:", style="bold"))
             if args.excel:
                 from .utils import save_diff_report
-                save_diff_report(df_added, df_removed, df_changed, df_new, key_col, final_output, df_old_dups, df_new_dups)
+                save_diff_report(
+                    df_added, df_removed, df_changed, df_new, key_col, final_output,
+                    df_old_dups, df_new_dups,
+                    old_file_name=os.path.basename(args.old_file),
+                    new_file_name=os.path.basename(args.new_file),
+                    df_old=df_old,
+                )
                 output_renderables.append(Text.from_markup(f"  [blue]- {final_output}[/blue] (Excel)"))
             
             if args.web:
