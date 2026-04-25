@@ -1,6 +1,7 @@
 
 import pandas as pd
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+from openpyxl.comments import Comment
 from openpyxl.utils import get_column_letter
 from typing import Optional
 import datetime
@@ -302,6 +303,7 @@ def save_diff_report(
                     for c_idx in range(1, max_col + 1):
                         cell = ws.cell(row=excel_row, column=c_idx)
                         cell.fill = fill_green
+                        cell.comment = Comment(f"Added row", "Diffxl")
 
         # Highlight Changed Cells (Yellow) + mark UID column
         if not df_changed.empty:
@@ -318,10 +320,14 @@ def save_diff_report(
                     excel_col = col_idx + 1
                     cell = ws.cell(row=excel_row, column=excel_col)
                     cell.fill = fill_yellow
+                    old_val = str(row["Old Value"])
+                    cell.comment = Comment(f"{old_val}", "Old value")
 
-            # Highlight UID column for changed rows (enables Filter by Color)
+            # Mark UID column for changed rows (red font — enables Filter by Color)
             key_excel_col = col_map.get(key_col, 0) + 1
             for k in changed_keys:
                 if k in key_map:
                     excel_row = key_map[k] + DATA_ROW_OFFSET
-                    ws.cell(row=excel_row, column=key_excel_col).fill = fill_yellow
+                    cell = ws.cell(row=excel_row, column=key_excel_col)
+                    cell.font = cell.font.copy(color="FF0000")
+                    cell.comment = Comment("Changes made to this row", "Diffxl")
