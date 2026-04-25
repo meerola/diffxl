@@ -129,8 +129,8 @@ HTML_TEMPLATE = """
         
         /* Sticky Headers */
         thead { z-index: 20; }
-        thead tr:nth-child(1) th { position: sticky; top: 0; z-index: 40; height: 3rem; }
-        thead tr:nth-child(2) th { position: sticky; top: 3rem; z-index: 40; height: 2.5rem; }
+        thead tr:nth-child(1) th { position: sticky; top: 0; z-index: 40; height: 4rem; vertical-align: bottom; }
+        thead tr:nth-child(2) th { position: sticky; top: 4rem; z-index: 40; height: 2.5rem; }
         
         thead th { 
             text-align: left; padding: 0.75rem 1rem; font-weight: 600; color: var(--text-muted); 
@@ -165,6 +165,12 @@ HTML_TEMPLATE = """
         /* Filter Row */
         .filter-row th { background: #ffffff; padding: 0.5rem; border-bottom: 1px solid var(--border); }
         .col-filter { width: 100%; padding: 0.2rem 0.4rem; font-size: 0.75rem; border: 1px solid var(--border); border-radius: 0.25rem; }
+        
+        .change-filter-label {
+            font-size: 0.65rem; font-weight: normal; color: var(--text-muted);
+            display: flex; align-items: center; gap: 4px; cursor: pointer; margin-bottom: 4px;
+        }
+        .change-filter-label input { margin: 0; }
         
         tbody td { 
             padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: top;
@@ -360,7 +366,12 @@ HTML_TEMPLATE = """
                                 class="sortable"
                                 style="width: {{ col_widths[col] }}; min-width: {{ col_widths[col] }};"
                                 data-relevant="{{ 'true' if col in relevant_cols else 'false' }}">
-                                {{ col }} <span class="sort-icon">⇅</span>
+                                {% if col != key_col %}
+                                <label class="change-filter-label" onclick="event.stopPropagation()">
+                                    <input type="checkbox" class="col-change-filter" data-col-idx="{{ loop.index }}" onchange="applyFilters()"> Changes
+                                </label>
+                                {% endif %}
+                                <div>{{ col }} <span class="sort-icon">⇅</span></div>
                             </th>
                             {% endfor %}
                         </tr>
@@ -451,6 +462,12 @@ HTML_TEMPLATE = """
         }
 
         function setFilter(status, btn) {
+            // Toggle logic: If clicking the same active filter (except 'all' or 'ignored'), revert to 'all'
+            if (status === currentStatusFilter && status !== 'all' && status !== 'ignored_view') {
+                status = 'all';
+                btn = document.querySelector('.stat-btn'); // The 'Total' button
+            }
+
             // UI: Clear active from stats and edit button
             document.querySelectorAll('.stat-btn, #btnEdits').forEach(b => b.classList.remove('active'));
             // If it's the ignored button, don't set active class here as it's a toggle logic handled elsewhere or we treat it as a mode
@@ -510,6 +527,10 @@ HTML_TEMPLATE = """
                 if (input.value.trim()) colFilters[idx + 1] = input.value.toLowerCase();
             });
 
+            // Column changes filter (checkboxes)
+            const changeCheckboxes = document.querySelectorAll('.col-change-filter:checked');
+            const changeColsIndices = Array.from(changeCheckboxes).map(cb => parseInt(cb.getAttribute('data-col-idx')));
+
             // Column Visibility (Only Edits Mode)
             const table = document.getElementById('diffTable');
             const allCells = table.querySelectorAll('th, td');
@@ -558,6 +579,21 @@ HTML_TEMPLATE = """
                     if (!cell || !cell.innerText.toLowerCase().includes(term)) {
                         matchCols = false;
                         break;
+                    }
+                }
+
+                // 4. Column changes filter (OR logic across selected columns)
+                if (matchCols && changeColsIndices.length > 0) {
+                    let hasMismatch = false;
+                    for (const idx of changeColsIndices) {
+                        const cell = row.children[idx];
+                        if (cell && (cell.classList.contains('cell-mod') || cell.classList.contains('cell-add-col'))) {
+                            hasMismatch = true;
+                            break;
+                        }
+                    }
+                    if (!hasMismatch) {
+                        matchCols = false;
                     }
                 }
 
