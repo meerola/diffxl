@@ -135,8 +135,8 @@ def diff_command(
     excel: Annotated[bool, typer.Option("--excel/--no-excel", help="Generate an Excel report")] = True,
     web: Annotated[bool, typer.Option("--web/--no-web", help="Generate an HTML report")] = True,
     open_web: Annotated[bool, typer.Option("--open/--no-open", help="Automatically open the HTML report in browser")] = False,
-    diagnostic: Annotated[bool, typer.Option("--diagnostic", "--diagnostics", "-d", help="Generate a diagnostic report showing column status and exit without diffing")] = False,
-    dedup: Annotated[bool, typer.Option("--dedup", help="Remove duplicate rows based on Key column (keeps first occurrence)")] = False,
+    diagnostic: Annotated[bool, typer.Option("--diagnostic", help="Generate a diagnostic report showing column status and exit without diffing")] = False,
+    dedup: Annotated[bool, typer.Option("--dedup", "-d", help="Remove duplicate rows based on Key column (keeps first occurrence)")] = False,
 ) -> None: 
     class Args: pass
     args = Args()
