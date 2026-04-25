@@ -1,4 +1,5 @@
-import argparse
+import typer
+from typing import Annotated, Optional
 import sys
 import os
 from rich.console import Console
@@ -62,22 +63,30 @@ def display_analysis_report(console: Console, report: AnalysisReport):
         expand=False
     ))
 
-def main() -> None: 
-    parser = argparse.ArgumentParser(description="DiffXL: Excel/CSV Comparison Tool")
-    
-    # Simplified CLI
-    parser.add_argument("old_file", help="Path to the original file (Excel or CSV)")
-    parser.add_argument("new_file", help="Path to the new file (Excel or CSV)")
-    parser.add_argument("--key", "-k", help="Column name to use as unique identifier (default: Leftmost column)")
-    parser.add_argument("--sheet", "-s", help="Specific sheet name to compare (Excel only)")
-    parser.add_argument("--output", "-o", default="diff_report.xlsx", help="Output Excel file name (default: diff_report.xlsx)")
-    parser.add_argument("--prefix", "-p", help="Add a prefix to output filenames (e.g., 'ABC' -> 'ABC_diff_report.xlsx')")
-    parser.add_argument("--raw", action="store_true", help="Perform exact string comparison (disable smart normalization)")
-    parser.add_argument("--no-web", action="store_true", help="Disable HTML report generation")
-    parser.add_argument("--diagnostic", "-d", "--diagnostics", action="store_true", help="Generate a diagnostic report if validation fails")
-    parser.add_argument("--dedup", action="store_true", help="Remove duplicate rows based on Key column (keeps first occurrence)")
-
-    args = parser.parse_args()
+def diff_command(
+    old_file: Annotated[str, typer.Argument(help="Path to the original file (Excel or CSV)")],
+    new_file: Annotated[str, typer.Argument(help="Path to the new file (Excel or CSV)")],
+    key: Annotated[Optional[str], typer.Option("--key", "-k", help="Column name to use as unique identifier (default: Leftmost column)")] = None,
+    sheet: Annotated[Optional[str], typer.Option("--sheet", "-s", help="Specific sheet name to compare (Excel only)")] = None,
+    output: Annotated[str, typer.Option("--output", "-o", help="Output Excel file name")] = "diff_report.xlsx",
+    prefix: Annotated[Optional[str], typer.Option("--prefix", "-p", help="Add a prefix to output filenames (e.g., 'ABC' -> 'ABC_diff_report.xlsx')")] = None,
+    raw: Annotated[bool, typer.Option("--raw", help="Perform exact string comparison (disable smart normalization)")] = False,
+    no_web: Annotated[bool, typer.Option("--no-web", help="Disable HTML report generation")] = False,
+    diagnostic: Annotated[bool, typer.Option("--diagnostic", "--diagnostics", "-d", help="Generate a diagnostic report if validation fails")] = False,
+    dedup: Annotated[bool, typer.Option("--dedup", help="Remove duplicate rows based on Key column (keeps first occurrence)")] = False,
+) -> None: 
+    class Args: pass
+    args = Args()
+    args.old_file = old_file
+    args.new_file = new_file
+    args.key = key
+    args.sheet = sheet
+    args.output = output
+    args.prefix = prefix
+    args.raw = raw
+    args.no_web = no_web
+    args.diagnostic = diagnostic
+    args.dedup = dedup
 
     # console.print(f"[bold blue]DiffXL[/bold blue]: Comparing [green]'{args.old_file}'[/green] vs [green]'{args.new_file}'[/green]")
     
@@ -267,6 +276,9 @@ def main() -> None:
     except Exception as e:
         console.print(f"[bold red]Unexpected Error:[/bold red] {e}")
         sys.exit(1)
+
+def main():
+    typer.run(diff_command)
 
 if __name__ == "__main__":
     main()

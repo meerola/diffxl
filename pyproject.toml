@@ -28,6 +28,7 @@ dependencies = [
     "xlrd",
     "rich",
     "jinja2",
+    "typer",
 ]
 
 [project.urls]

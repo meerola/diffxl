@@ -208,10 +208,9 @@ __marimo__/
 
 
 # generated files
-# generated files
 *.html
 *.xlsx
-.GEMINI.md
+.gemini/
 
 # Allow samples and tests
 !samples/*.xlsx
