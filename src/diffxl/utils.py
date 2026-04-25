@@ -1,10 +1,12 @@
 
-import pandas as pd
-from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
-from openpyxl.comments import Comment
-from openpyxl.utils import get_column_letter
-from typing import Optional
+import copy
 import datetime
+from typing import Optional
+
+import pandas as pd
+from openpyxl.comments import Comment
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 
 
 def save_diff_report(
@@ -329,5 +331,7 @@ def save_diff_report(
                 if k in key_map:
                     excel_row = key_map[k] + DATA_ROW_OFFSET
                     cell = ws.cell(row=excel_row, column=key_excel_col)
-                    cell.font = cell.font.copy(color="FF0000")
+                    font_copy = copy.copy(cell.font)
+                    font_copy.color = "FF0000"
+                    cell.font = font_copy
                     cell.comment = Comment("Changes made to this row", "Diffxl")

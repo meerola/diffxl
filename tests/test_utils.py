@@ -45,8 +45,8 @@ def test_save_diff_report_creates_file(tmp_path):
     assert "Added Rows" in xls.sheet_names
     assert "Removed Rows" in xls.sheet_names
     assert "Changed Details" in xls.sheet_names
-    assert "Full Diff" in xls.sheet_names
+    assert "Full Diff - excl removals" in xls.sheet_names
     
     # Check Full Diff content (simple check)
-    df_full = pd.read_excel(output_file, sheet_name="Full Diff")
-    assert len(df_full) == 3
+    df_full = pd.read_excel(output_file, sheet_name="Full Diff - excl removals")
+    assert len(df_full) == 4

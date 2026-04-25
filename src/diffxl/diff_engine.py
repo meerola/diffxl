@@ -42,6 +42,8 @@ def compare_dataframes(df_old: pd.DataFrame, df_new: pd.DataFrame, key_col: str,
               If False, uses smart normalization (NaN becomes 'MISSING_VALUE' to avoid clashing with literal 'nan').
     """
     
+    df_old = df_old.copy()
+    df_new = df_new.copy()
     df_old[key_col] = df_old[key_col].astype(str).str.strip()
     df_new[key_col] = df_new[key_col].astype(str).str.strip()
     
