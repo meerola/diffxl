@@ -211,39 +211,43 @@ HTML_TEMPLATE = """
         /* Helpers */
         .hidden { display: none !important; }
         
+        /* Edits-only mode: hide irrelevant columns via CSS (avoids per-cell JS toggle) */
+        table.edits-mode th[data-relevant="false"],
+        table.edits-mode td[data-relevant="false"] { display: none; }
+        
         /* Print Optimization */
         @media print {
-            @page { size: A1 landscape; margin: 0.5cm; }
+            @page { margin: 0.5cm; }
             body { 
                 background: white; 
                 -webkit-print-color-adjust: exact; 
                 print-color-adjust: exact; 
-                font-size: 9pt; 
-                zoom: 80%; /* Fit more content */
+                font-size: 6pt; 
             }
             .app-container { height: auto; padding: 0; max-width: none; display: block; }
             
             /* Hide UI controls */
-            .actions-group, .filter-row, .btn-help, #btnToggleOld { display: none !important; }
+            .actions-group, .filter-row, .btn-help, #btnToggleOld, .help-panel,
+            .change-filter-label { display: none !important; }
             .col-filter { display: none !important; }
             
             /* Simplify Header */
-            header { box-shadow: none; border: none; padding: 0; margin-bottom: 1rem; }
-            .controls-header { border: none; background: none; padding: 0; margin-bottom: 1rem; }
-            .stat-btn { border: 1px solid #ccc; background: white; }
+            header { box-shadow: none; border: none; padding: 0; margin-bottom: 0.5rem; }
+            .controls-header { border: none; background: none; padding: 0; margin-bottom: 0.5rem; }
+            .stat-btn { border: 1px solid #ccc; background: white; font-size: 6pt; padding: 2px 4px; }
             .stat-btn.active { box-shadow: none; border-color: #000; }
             
-            /* Table Layout */
+            /* Table Layout — strip all fixed sizing */
             .table-window { border: none; box-shadow: none; height: auto; overflow: visible; display: block; }
             .table-scroll { overflow: visible; height: auto; }
             
             table { 
                 width: 100%; 
                 border-collapse: collapse; 
-                table-layout: auto; /* Allow shrink */
+                table-layout: auto;
             }
             
-            /* Remove Sticky/Fixed */
+            /* Remove Sticky/Fixed + strip inline widths */
             th, td, .sticky-left-1, .sticky-left-2 { 
                 position: static !important; 
                 left: auto !important; 
@@ -251,20 +255,29 @@ HTML_TEMPLATE = """
                 height: auto !important;
                 z-index: auto !important;
                 overflow: visible !important;
+                width: auto !important;
+                min-width: 0 !important;
+                max-width: none !important;
             }
             
-            /* Print Borders */
-            th, td { border: 1px solid #999 !important; padding: 4px 6px; }
+            /* Compact print cells */
+            th, td { 
+                border: 1px solid #999 !important; 
+                padding: 1px 3px !important;
+                white-space: normal !important; 
+                word-break: break-word;
+                font-size: 6pt;
+            }
+            thead th { font-size: 6pt; padding: 2px 3px !important; }
             
             /* Ensure Colors */
             .row-added td { background-color: #dcfce7 !important; }
             .row-removed td { background-color: #fee2e2 !important; }
             td.cell-mod { background-color: #fef9c3 !important; }
             
-            /* Wrap text to fit width */
-            td, th { white-space: normal !important; word-wrap: break-word; }
-            
-
+            /* Status badges — scale down for print */
+            .badge { font-size: 4pt; padding: 0px 2px; border-radius: 2px; }
+            .sticky-left-1 { width: 30px !important; min-width: 30px !important; }
         }
         /* Help Tooltip */
         .btn-help {
@@ -283,6 +296,21 @@ HTML_TEMPLATE = """
             pointer-events: none; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); line-height: 1.4;
         }
         .btn-help:hover::after { visibility: visible; opacity: 1; }
+        
+        /* Help Panel */
+        .help-panel {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 0.5rem;
+            padding: 1rem 1.25rem; margin-bottom: 0.75rem; box-shadow: var(--shadow-sm);
+            font-size: 0.8rem; color: var(--text-muted); line-height: 1.6;
+        }
+        .help-panel h3 { margin: 0 0 0.5rem 0; font-size: 0.9rem; color: var(--text-main); }
+        .help-panel .help-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1.5rem; }
+        .help-panel dl { margin: 0; }
+        .help-panel dt { font-weight: 600; color: var(--text-main); font-size: 0.8rem; margin-top: 0.4rem; }
+        .help-panel dt:first-child { margin-top: 0; }
+        .help-panel dd { margin: 0 0 0 0; }
+        .help-panel code { background: #f3f4f6; padding: 0.1rem 0.35rem; border-radius: 3px; font-family: var(--font-mono); font-size: 0.75rem; }
+        @media print { .help-panel { display: none !important; } }
     </style>
 </head>
 <body class="show-old-values">
@@ -290,7 +318,7 @@ HTML_TEMPLATE = """
         <header>
             <div class="header-left">
                 <h1>{{ title_prefix }}DiffXL Report</h1>
-                <button class="btn-help" data-tooltip="DiffXL treats empty values (NaN, None, '') as equal by default. Use --raw for strict string comparison. When using the 'Show old values' button, an empty value is replaced with the !empty! placeholder">?</button>
+                <button class="btn-help" onclick="document.getElementById('helpPanel').classList.toggle('hidden')" title="Toggle help">?</button>
                 <div class="meta">
                     <span class="key-badge">UID: {{ key_col }}</span>
                     <span style="color: var(--border)">|</span>
@@ -304,6 +332,43 @@ HTML_TEMPLATE = """
                 <div class="timestamp">{{ timestamp }}</div>
             </div>
         </header>
+
+        <div id="helpPanel" class="help-panel hidden">
+            <div class="help-grid">
+                <div>
+                    <h3>Filtering & Search</h3>
+                    <dl>
+                        <dt>Status buttons</dt>
+                        <dd>Click <strong>Added</strong>, <strong>Removed</strong>, or <strong>Changed</strong> to show only rows with that status. Click again to deselect.</dd>
+                        <dt>Only Edits</dt>
+                        <dd>Hides unchanged rows <em>and</em> columns with no changes, giving a compact view of what changed.</dd>
+                        <dt>Column filters</dt>
+                        <dd>Type in the filter row below each column header to narrow by that column's value.</dd>
+                        <dt>Column checkboxes</dt>
+                        <dd>Tick the checkbox above a column to show only rows that have a change in that column. Multiple checkboxes combine with OR logic.</dd>
+                    </dl>
+                </div>
+                <div>
+                    <h3>Wildcards</h3>
+                    <dl>
+                        <dt>Using <code>*</code></dt>
+                        <dd>All search and filter fields support <code>*</code> as a wildcard.<br>
+                            <code>CS*</code> matches anything starting with "CS".<br>
+                            <code>*SS</code> matches anything ending with "SS".<br>
+                            <code>T-1*5</code> matches "T-105", "T-12345", etc.</dd>
+                    </dl>
+                    <h3>Other</h3>
+                    <dl>
+                        <dt>Empty values</dt>
+                        <dd>DiffXL treats empty values (NaN, None, '') as equal by default. Use <code>--raw</code> for strict comparison. The <code>!empty!</code> placeholder appears when showing old values.</dd>
+                        <dt>Printing</dt>
+                        <dd>Use <strong>Only Edits</strong> before printing to hide unchanged columns. Choose <strong>Landscape</strong> orientation in your browser's print dialog for best results.</dd>
+                        <dt>Sorting</dt>
+                        <dd>Click any column header to toggle sort order.</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
 
         <div class="controls-header">
             <div class="stat-group">
@@ -367,8 +432,8 @@ HTML_TEMPLATE = """
                                 style="width: {{ col_widths[col] }}; min-width: {{ col_widths[col] }};"
                                 data-relevant="{{ 'true' if col in relevant_cols else 'false' }}">
                                 {% if col != key_col %}
-                                <label class="change-filter-label" onclick="event.stopPropagation()">
-                                    <input type="checkbox" class="col-change-filter" data-col-idx="{{ loop.index }}" onchange="applyFilters()"> Changes
+                                <label class="change-filter-label" onclick="event.stopPropagation()"{% if col not in changed_cols %} style="opacity: 0.35; cursor: default;"{% endif %}>
+                                    <input type="checkbox" class="col-change-filter" data-col-idx="{{ loop.index }}" onchange="applyFilters()"{% if col not in changed_cols %} disabled{% endif %}> {% if col_change_counts.get(col, 0) > 0 %}<span style="font-family: var(--font-mono); color: var(--changed-text);">{{ col_change_counts[col] }}</span>{% else %}Changes{% endif %}
                                 </label>
                                 {% endif %}
                                 <div>{{ col }} <span class="sort-icon">⇅</span></div>
@@ -451,6 +516,63 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
+        // ── Performance: Pre-cache row data at load time ──
+        // Avoids repeated DOM reads (innerText/textContent) during filter/sort.
+        let rowCache = [];  // [{el, status, cellTexts: string[], cellMods: boolean[]}]
+
+        function buildRowCache() {
+            rowCache = [];
+            const rows = document.querySelectorAll('#tableBody tr');
+            rows.forEach(row => {
+                const cells = row.children;
+                const cellTexts = [];
+                const cellMods = [];
+                for (let i = 0; i < cells.length; i++) {
+                    cellTexts.push(cells[i].textContent.toLowerCase());
+                    cellMods.push(cells[i].classList.contains('cell-mod') || cells[i].classList.contains('cell-add-col'));
+                }
+                rowCache.push({
+                    el: row,
+                    status: row.getAttribute('data-status'),
+                    cellTexts,
+                    cellMods,
+                    fullText: cellTexts.join(' ')
+                });
+            });
+        }
+
+        // ── Debounce helper ──
+        function debounce(fn, delay) {
+            let timer;
+            return function(...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        // ── Wildcard matching ──
+        // Supports * as glob wildcard.  Falls back to plain includes() when
+        // no wildcards are present (faster for the common case).
+        function matchWild(text, pattern) {
+            if (!pattern.includes('*')) return text.includes(pattern);
+            // Split on *, match segments in order
+            const parts = pattern.split('*');
+            let pos = 0;
+            for (let i = 0; i < parts.length; i++) {
+                const seg = parts[i];
+                if (seg === '') continue;
+                const idx = text.indexOf(seg, pos);
+                if (idx === -1) return false;
+                pos = idx + seg.length;
+            }
+            // If pattern starts with non-*, first segment must be at start
+            if (parts[0] !== '' && !text.startsWith(parts[0])) return false;
+            // If pattern ends with non-*, last segment must be at end
+            const last = parts[parts.length - 1];
+            if (last !== '' && !text.endsWith(last)) return false;
+            return true;
+        }
+
         // State
         let currentStatusFilter = 'all';
         let showOldValues = true; // Default shown
@@ -458,7 +580,7 @@ HTML_TEMPLATE = """
         function toggleOldValues(btn) {
             showOldValues = !showOldValues;
             document.body.classList.toggle('show-old-values', showOldValues);
-            if (btn) btn.innerText = showOldValues ? "Hide old values" : "Show old values";
+            if (btn) btn.textContent = showOldValues ? "Hide old values" : "Show old values";
         }
 
         function setFilter(status, btn) {
@@ -514,6 +636,7 @@ HTML_TEMPLATE = """
         function clearFilters() {
             if (document.getElementById('globalSearch')) document.getElementById('globalSearch').value = '';
             document.querySelectorAll('.col-filter').forEach(input => input.value = '');
+            document.querySelectorAll('.col-change-filter').forEach(cb => cb.checked = false);
             applyFilters();
         }
 
@@ -531,63 +654,49 @@ HTML_TEMPLATE = """
             const changeCheckboxes = document.querySelectorAll('.col-change-filter:checked');
             const changeColsIndices = Array.from(changeCheckboxes).map(cb => parseInt(cb.getAttribute('data-col-idx')));
 
-            // Column Visibility (Only Edits Mode)
+            // Column Visibility (Only Edits Mode) — use CSS class on table instead of per-cell toggle
             const table = document.getElementById('diffTable');
-            const allCells = table.querySelectorAll('th, td');
-            
-            if (currentStatusFilter === 'edits') {
-                // Hide irrelevant columns
-                allCells.forEach(cell => {
-                    if (cell.getAttribute('data-relevant') === 'false') cell.classList.add('hidden');
-                    else cell.classList.remove('hidden');
-                });
-            } else {
-                // Show all columns
-                allCells.forEach(cell => cell.classList.remove('hidden'));
-            }
+            table.classList.toggle('edits-mode', currentStatusFilter === 'edits');
 
-            const rows = document.querySelectorAll('#tableBody tr');
             let visibleCount = 0;
 
-            rows.forEach(row => {
-                const status = row.getAttribute('data-status');
+            for (let i = 0; i < rowCache.length; i++) {
+                const cached = rowCache[i];
                 
                 // 1. Status Filter
                 let matchStatus = false;
                 if (currentStatusFilter === 'all') matchStatus = true;
-                else if (currentStatusFilter === 'edits') matchStatus = (status !== 'unchanged');
-                else matchStatus = (status === currentStatusFilter);
+                else if (currentStatusFilter === 'edits') matchStatus = (cached.status !== 'unchanged');
+                else matchStatus = (cached.status === currentStatusFilter);
 
                 if (!matchStatus) {
-                    row.classList.add('hidden');
-                    return; // Skip rest
+                    cached.el.classList.add('hidden');
+                    continue;
                 }
 
-                // 2. Global Search
+                // 2. Global Search (uses pre-cached fullText + wildcard matching)
                 if (globalSearch) {
-                    const rowText = row.innerText.toLowerCase();
-                    if (!rowText.includes(globalSearch)) {
-                        row.classList.add('hidden');
-                        return;
+                    if (!matchWild(cached.fullText, globalSearch)) {
+                        cached.el.classList.add('hidden');
+                        continue;
                     }
                 }
 
-                // 3. Column Filters
+                // 3. Column Filters (uses pre-cached cellTexts + wildcard matching)
                 let matchCols = true;
                 for (const [colIdx, term] of Object.entries(colFilters)) {
-                    const cell = row.children[colIdx];
-                    if (!cell || !cell.innerText.toLowerCase().includes(term)) {
+                    const text = cached.cellTexts[colIdx];
+                    if (!text || !matchWild(text, term)) {
                         matchCols = false;
                         break;
                     }
                 }
 
-                // 4. Column changes filter (OR logic across selected columns)
+                // 4. Column changes filter (uses pre-cached cellMods, OR logic)
                 if (matchCols && changeColsIndices.length > 0) {
                     let hasMismatch = false;
                     for (const idx of changeColsIndices) {
-                        const cell = row.children[idx];
-                        if (cell && (cell.classList.contains('cell-mod') || cell.classList.contains('cell-add-col'))) {
+                        if (cached.cellMods[idx]) {
                             hasMismatch = true;
                             break;
                         }
@@ -598,28 +707,31 @@ HTML_TEMPLATE = """
                 }
 
                 if (matchCols) {
-                    row.classList.remove('hidden');
+                    cached.el.classList.remove('hidden');
                     visibleCount++;
                 } else {
-                    row.classList.add('hidden');
+                    cached.el.classList.add('hidden');
                 }
-            });
+            }
 
             const noRes = document.getElementById('noResults');
             if (noRes) noRes.classList.toggle('hidden', visibleCount > 0);
         }
 
-        // Sorting
+        // Debounced version for text inputs
+        const debouncedApplyFilters = debounce(applyFilters, 150);
+
+        // Sorting (uses DocumentFragment to batch DOM updates)
         function sortTable(n) {
             const table = document.getElementById("diffTable");
             const tbody = document.getElementById("tableBody");
-            let rows = Array.from(tbody.querySelectorAll("tr"));
             let dir = table.getAttribute("data-sort-dir") === "asc" ? "desc" : "asc";
             table.setAttribute("data-sort-dir", dir);
 
-            rows.sort((a, b) => {
-                let x = a.children[n].innerText.toLowerCase();
-                let y = b.children[n].innerText.toLowerCase();
+            // Sort using cached text instead of reading DOM
+            rowCache.sort((a, b) => {
+                let x = a.cellTexts[n] || '';
+                let y = b.cellTexts[n] || '';
                 
                 let numX = parseFloat(x);
                 let numY = parseFloat(y);
@@ -632,8 +744,29 @@ HTML_TEMPLATE = """
                 else return x < y ? 1 : -1;
             });
 
-            rows.forEach(row => tbody.appendChild(row));
+            // Batch DOM updates with DocumentFragment
+            const frag = document.createDocumentFragment();
+            for (let i = 0; i < rowCache.length; i++) {
+                frag.appendChild(rowCache[i].el);
+            }
+            tbody.appendChild(frag);
         }
+
+        // ── Initialization ──
+        document.addEventListener('DOMContentLoaded', () => {
+            buildRowCache();
+
+            // Wire up debounced handlers for text inputs
+            const globalSearch = document.getElementById('globalSearch');
+            if (globalSearch) {
+                globalSearch.removeAttribute('onkeyup');
+                globalSearch.addEventListener('input', debouncedApplyFilters);
+            }
+            document.querySelectorAll('.col-filter').forEach(input => {
+                input.removeAttribute('onkeyup');
+                input.addEventListener('input', debouncedApplyFilters);
+            });
+        });
     </script>
 </body>
 </html>
@@ -765,6 +898,11 @@ def generate_html_report(
     changed_cols_set = set(df_changed["Column"].unique()) if not df_changed.empty else set()
     relevant_cols = set([key_col]) | set(added_cols_list) | changed_cols_set
     
+    # Per-column change counts
+    col_change_counts = {}
+    if not df_changed.empty:
+        col_change_counts = df_changed["Column"].value_counts().to_dict()
+    
     # Prepare title prefix
     title_prefix = f"{prefix} - " if prefix else ""
     
@@ -832,6 +970,8 @@ def generate_html_report(
         removed_cols=removed_cols_list,
         timestamp=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         relevant_cols=relevant_cols,
+        changed_cols=changed_cols_set,
+        col_change_counts=col_change_counts,
         title_prefix=title_prefix,
         key_col=key_col,
         col_widths=col_widths
