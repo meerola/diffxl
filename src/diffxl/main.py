@@ -71,7 +71,9 @@ def diff_command(
     output: Annotated[str, typer.Option("--output", "-o", help="Output Excel file name")] = "diff_report.xlsx",
     prefix: Annotated[Optional[str], typer.Option("--prefix", "-p", help="Add a prefix to output filenames (e.g., 'ABC' -> 'ABC_diff_report.xlsx')")] = None,
     raw: Annotated[bool, typer.Option("--raw", help="Perform exact string comparison (disable smart normalization)")] = False,
-    no_web: Annotated[bool, typer.Option("--no-web", help="Disable HTML report generation")] = False,
+    excel: Annotated[bool, typer.Option("--excel/--no-excel", help="Generate an Excel report")] = True,
+    web: Annotated[bool, typer.Option("--web/--no-web", help="Generate an HTML report")] = True,
+    open_web: Annotated[bool, typer.Option("--open/--no-open", help="Automatically open the HTML report in browser")] = False,
     diagnostic: Annotated[bool, typer.Option("--diagnostic", "--diagnostics", "-d", help="Generate a diagnostic report if validation fails")] = False,
     dedup: Annotated[bool, typer.Option("--dedup", help="Remove duplicate rows based on Key column (keeps first occurrence)")] = False,
 ) -> None: 
@@ -84,7 +86,9 @@ def diff_command(
     args.output = output
     args.prefix = prefix
     args.raw = raw
-    args.no_web = no_web
+    args.excel = excel
+    args.web = web
+    args.open_web = open_web
     args.diagnostic = diagnostic
     args.dedup = dedup
 
@@ -197,11 +201,14 @@ def diff_command(
             console.print(table)
             
             # Reports
-            console.print(f"\nGenerating report [bold]'{final_output}'[/bold]...")
-            from .utils import save_diff_report
-            save_diff_report(df_added, df_removed, df_changed, df_new, key_col, final_output, df_old_dups, df_new_dups)
+            if args.excel:
+                console.print(f"\nGenerating report [bold]'{final_output}'[/bold]...")
+                from .utils import save_diff_report
+                save_diff_report(df_added, df_removed, df_changed, df_new, key_col, final_output, df_old_dups, df_new_dups)
+            else:
+                console.print("\n[dim]Skipping Excel report generation.[/dim]")
             
-            if not args.no_web:
+            if args.web:
                 html_output = final_output.rsplit('.', 1)[0] + ".html"
                 console.print(f"Generating web report [bold]'{html_output}'[/bold]...")
                 generate_html_report(
@@ -212,8 +219,11 @@ def diff_command(
                     df_old_dups=df_old_dups,
                     df_new_dups=df_new_dups
                 )
-                console.print("[bold green]Opening web report...[/bold green]")
-                webbrowser.open(f"file://{os.path.abspath(html_output)}")
+                if args.open_web:
+                    console.print("[bold green]Opening web report...[/bold green]")
+                    webbrowser.open(f"file://{os.path.abspath(html_output)}")
+            else:
+                console.print("[dim]Skipping HTML report generation.[/dim]")
 
             console.print("[bold green]Done![/bold green] :sparkles:")
 

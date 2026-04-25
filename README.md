@@ -68,9 +68,12 @@ uvx diffxl <old_file> <new_file>
 * `--output`, `-o`: Output filename or path for the xlsx report(default: `diff_report.xlsx`). html report will be saved in the same directory with the same name.
 * `--prefix`, `-p`: Add a prefix to output filenames (e.g., `ABC_diff_report.xlsx`) to keep track of multiple runs.
 * `--raw`: Perform exact string comparison (disable smart normalization like treating `NaN` as equal to `None`).
-* `--no-web`: Disable HTML report generation.
-* `--diagnostic`, `-d`: Generate a detailed HTML diagnostic report if validation fails.
+* `--excel` / `--no-excel`: Generate the Excel report (default: enabled).
+* `--web` / `--no-web`: Generate the interactive HTML report (default: enabled).
+* `--open` / `--no-open`: Automatically open the HTML report in your browser (default: enabled).
+* `--diagnostic`, `--diagnostics`, `-d`: Generate a detailed HTML diagnostic report if validation fails.
 * `--dedup`: Remove duplicate rows based on Key column (keeps first occurrence).
+* `--help`: Show the beautifully formatted help message and exit.
 
 ### Example
 
